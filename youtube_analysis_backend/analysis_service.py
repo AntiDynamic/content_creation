@@ -2,7 +2,7 @@
 Main analysis orchestration service
 Implements the complete workflow from channel URL to analysis results
 """
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 from datetime import datetime, timedelta
 import hashlib
 from sqlalchemy.orm import Session
@@ -21,6 +21,136 @@ class AnalysisService:
     
     def __init__(self, db: Session):
         self.db = db
+    
+    def analyze_channel_strategic(self, channel_url: str) -> Dict:
+        """
+        Strategic analysis workflow with deep guidance
+        
+        Analyzes top 5 performing videos + latest 5 videos
+        to provide actionable growth strategies
+        """
+        # Step 1: Extract channel ID
+        channel_id = self._get_channel_id_from_url(channel_url)
+        if not channel_id:
+            return {
+                'success': False,
+                'error': 'Invalid YouTube channel URL',
+                'error_code': 'INVALID_URL'
+            }
+        
+        # Step 2: Fetch channel metadata
+        channel_metadata = self._fetch_and_store_channel_metadata(channel_id)
+        if not channel_metadata:
+            return {
+                'success': False,
+                'error': 'Channel not found or API error',
+                'error_code': 'CHANNEL_NOT_FOUND'
+            }
+        
+        # Step 3: Fetch video list (get more for proper sorting)
+        videos_list = self._fetch_video_list(channel_metadata['upload_playlist_id'])
+        if not videos_list:
+            return {
+                'success': False,
+                'error': 'No videos found on channel',
+                'error_code': 'NO_VIDEOS'
+            }
+        
+        # Step 4: Get details for sorting - fetch up to 50 recent videos
+        recent_video_ids = [v['video_id'] for v in videos_list[:50]]
+        all_detailed_videos = youtube_client.get_video_details(recent_video_ids)
+        
+        if not all_detailed_videos:
+            return {
+                'success': False,
+                'error': 'Failed to fetch video details',
+                'error_code': 'VIDEO_FETCH_ERROR'
+            }
+        
+        # Step 5: Sort and select top 5 by views + latest 5
+        sorted_by_views = sorted(all_detailed_videos, key=lambda x: x.get('view_count', 0), reverse=True)
+        sorted_by_date = sorted(all_detailed_videos, key=lambda x: x.get('published_at', ''), reverse=True)
+        
+        top_videos = sorted_by_views[:5]
+        recent_videos = sorted_by_date[:5]
+        
+        # Store video metadata
+        self._store_video_metadata(all_detailed_videos)
+        
+        # Step 6: Strategic analysis with Gemini
+        print(f"DEBUG: Starting strategic analysis - Top 5 + Recent 5 videos")
+        try:
+            analysis_result = gemini_analyzer.analyze_channel_strategic(
+                channel_metadata, 
+                top_videos,
+                recent_videos
+            )
+            print(f"DEBUG: Strategic analysis result: {analysis_result is not None}")
+        except Exception as e:
+            print(f"DEBUG: Strategic analysis exception: {e}")
+            import traceback
+            traceback.print_exc()
+            analysis_result = None
+        
+        if not analysis_result:
+            return {
+                'success': False,
+                'error': 'AI analysis failed',
+                'error_code': 'ANALYSIS_FAILED'
+            }
+        
+        # Step 7: Format strategic response
+        response_data = {
+            'channel': {
+                'id': channel_metadata['channel_id'],
+                'title': channel_metadata['title'],
+                'description': channel_metadata.get('description', '')[:500],
+                'subscriber_count': channel_metadata['subscriber_count'],
+                'video_count': channel_metadata['video_count'],
+                'view_count': channel_metadata['view_count'],
+                'thumbnail_url': channel_metadata.get('thumbnail_url'),
+                'published_at': channel_metadata.get('published_at')
+            },
+            'top_videos': [
+                {
+                    'title': v['title'],
+                    'views': v['view_count'],
+                    'likes': v['like_count'],
+                    'comments': v['comment_count'],
+                    'published_at': v['published_at'],
+                    'video_id': v['video_id'],
+                    'thumbnail_url': v.get('thumbnail_url', f"https://img.youtube.com/vi/{v['video_id']}/mqdefault.jpg")
+                } for v in top_videos
+            ],
+            'recent_videos': [
+                {
+                    'title': v['title'],
+                    'views': v['view_count'],
+                    'likes': v['like_count'],
+                    'comments': v['comment_count'],
+                    'published_at': v['published_at'],
+                    'video_id': v['video_id'],
+                    'thumbnail_url': v.get('thumbnail_url', f"https://img.youtube.com/vi/{v['video_id']}/mqdefault.jpg")
+                } for v in recent_videos
+            ],
+            'analysis': analysis_result,
+            'meta': {
+                'analyzed_at': datetime.utcnow().isoformat(),
+                'videos_analyzed': len(top_videos) + len(recent_videos),
+                'top_videos_analyzed': len(top_videos),
+                'recent_videos_analyzed': len(recent_videos),
+                'total_videos': channel_metadata['video_count'],
+                'freshness': 'fresh',
+                'confidence': 0.95,
+                'model_version': analysis_result.get('model_version', settings.gemini_model)
+            }
+        }
+        
+        return {
+            'success': True,
+            'data': response_data,
+            'source': 'fresh_strategic_analysis'
+        }
     
     def analyze_channel(self, channel_url: str) -> Dict:
         """

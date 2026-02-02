@@ -1,8 +1,11 @@
 """
 FastAPI application - REST API endpoints
 """
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -10,6 +13,9 @@ from typing import Optional
 from database import get_db_session, init_db
 from analysis_service import AnalysisService
 from config import get_settings
+
+# Frontend directory
+FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 settings = get_settings()
 
@@ -87,6 +93,63 @@ class ErrorResponse(BaseModel):
     details: Optional[str] = None
 
 
+class VideoInfo(BaseModel):
+    """Video information for strategic analysis"""
+    title: str
+    views: int
+    likes: int
+    comments: int
+    published_at: str
+    thumbnail_url: Optional[str] = None
+
+
+class ContentScore(BaseModel):
+    """Content score breakdown"""
+    overall: int
+    consistency: int
+    engagement: int
+    growth_potential: int
+
+
+class GrowthStrategy(BaseModel):
+    """Growth strategy details"""
+    priority: str
+    action: str
+    expected_impact: str
+    timeline: str
+
+
+class ContentRecommendation(BaseModel):
+    """Content recommendation"""
+    type: str
+    description: str
+    frequency: str
+    example_topics: list[str]
+
+
+class StrategicAnalysisResult(BaseModel):
+    """Strategic analysis results"""
+    strengths: list[str]
+    weaknesses: list[str]
+    growth_strategy: list[GrowthStrategy]
+    content_recommendations: list[ContentRecommendation]
+    thumbnail_advice: str
+    title_advice: str
+    upload_schedule: str
+    engagement_tips: list[str]
+    scores: ContentScore
+    overall_verdict: str
+
+
+class StrategicAnalysisResponse(BaseModel):
+    """Complete strategic analysis response"""
+    channel: ChannelInfo
+    top_videos: list[VideoInfo]
+    recent_videos: list[VideoInfo]
+    analysis: StrategicAnalysisResult
+    meta: AnalysisMeta
+
+
 # API Endpoints
 
 @app.on_event("startup")
@@ -97,9 +160,9 @@ async def startup_event():
     print(f"✅ API running in {settings.app_env} mode")
 
 
-@app.get("/")
-async def root():
-    """Root endpoint - API info"""
+@app.get("/api")
+async def api_info():
+    """API info endpoint"""
     return {
         "service": "YouTube Channel Analysis API",
         "version": settings.api_version,
@@ -209,6 +272,92 @@ async def analyze_channel(
         )
 
 
+@app.post(
+    f"/{settings.api_version}/analyze/strategic",
+    response_model=StrategicAnalysisResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid request"},
+        404: {"model": ErrorResponse, "description": "Channel not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"}
+    }
+)
+async def analyze_channel_strategic(
+    request: AnalyzeChannelRequest,
+    db: Session = Depends(get_db_session)
+):
+    """
+    Strategic YouTube Channel Analysis
+    
+    This endpoint provides deep strategic guidance by analyzing:
+    - Top 5 most viewed videos (what works best)
+    - Latest 5 videos (current direction)
+    
+    **Returns comprehensive guidance including:**
+    - Strengths and weaknesses analysis
+    - Growth strategies with priorities and timelines
+    - Content recommendations with example topics
+    - Thumbnail and title optimization advice
+    - Upload schedule recommendations
+    - Engagement improvement tips
+    - Content scores (overall, consistency, engagement, growth potential)
+    
+    **Response time:** 15-45 seconds (depending on AI analysis)
+    """
+    try:
+        # Create analysis service
+        service = AnalysisService(db)
+        
+        # Run strategic analysis
+        result = service.analyze_channel_strategic(request.channel_url)
+        
+        # Handle errors
+        if not result.get('success', False):
+            error_code = result.get('error_code', 'UNKNOWN_ERROR')
+            error_message = result.get('error', 'An error occurred')
+            
+            if error_code == 'INVALID_URL':
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "error": error_message,
+                        "error_code": error_code
+                    }
+                )
+            elif error_code == 'CHANNEL_NOT_FOUND':
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail={
+                        "error": error_message,
+                        "error_code": error_code
+                    }
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "error": error_message,
+                        "error_code": error_code
+                    }
+                )
+        
+        # Return successful response
+        return result['data']
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error in analyze_channel_strategic: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "Internal server error",
+                "error_code": "INTERNAL_ERROR",
+                "details": str(e) if settings.debug else None
+            }
+        )
+
+
 @app.get(f"/{settings.api_version}/channel/{{channel_id}}")
 async def get_channel_analysis(
     channel_id: str,
@@ -277,6 +426,16 @@ async def get_channel_analysis(
         "data": response_data,
         "source": "database"
     }
+
+
+# Serve frontend
+@app.get("/")
+async def serve_frontend():
+    """Serve the frontend HTML"""
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+# Mount static files (CSS, JS) - must be after API routes
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 if __name__ == "__main__":

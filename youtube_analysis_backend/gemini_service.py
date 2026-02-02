@@ -17,20 +17,100 @@ class GeminiAnalyzer:
         self.client = genai.Client(api_key=settings.gemini_api_key)
         self.model = settings.gemini_model
     
+    def prepare_strategic_analysis_prompt(
+        self, 
+        channel_metadata: Dict, 
+        top_videos: List[Dict],
+        recent_videos: List[Dict]
+    ) -> str:
+        """
+        Prepare strategic analysis prompt for deep channel guidance
+        
+        Args:
+            channel_metadata: Channel metadata from YouTube
+            top_videos: Top performing videos by views
+            recent_videos: Most recent videos
+            
+        Returns:
+            Formatted prompt string
+        """
+        # Format channel info
+        channel_info = f"""=== CHANNEL PROFILE ===
+Channel Name: {channel_metadata.get('title')}
+Description: {channel_metadata.get('description', 'N/A')[:500]}
+Subscribers: {channel_metadata.get('subscriber_count', 0):,}
+Total Videos: {channel_metadata.get('video_count', 0):,}
+Total Views: {channel_metadata.get('view_count', 0):,}
+Active Since: {channel_metadata.get('published_at', 'Unknown')}
+Country: {channel_metadata.get('country', 'Unknown')}
+
+Average Views per Video: {channel_metadata.get('view_count', 0) // max(channel_metadata.get('video_count', 1), 1):,}
+
+"""
+        
+        # Format top performing videos
+        top_video_info = "=== TOP PERFORMING VIDEOS (By Views) ===\n\n"
+        for idx, video in enumerate(top_videos, 1):
+            engagement_rate = (video.get('like_count', 0) / max(video.get('view_count', 1), 1)) * 100
+            top_video_info += f"""#{idx} - {video.get('title')}
+   Views: {video.get('view_count', 0):,} | Likes: {video.get('like_count', 0):,} | Comments: {video.get('comment_count', 0):,}
+   Engagement Rate: {engagement_rate:.2f}%
+   Published: {video.get('published_at')}
+   Duration: {video.get('duration', 'Unknown')}
+   Tags: {', '.join(video.get('tags', [])[:5]) or 'None'}
+
+"""
+        
+        # Format recent videos
+        recent_video_info = "=== MOST RECENT VIDEOS ===\n\n"
+        for idx, video in enumerate(recent_videos, 1):
+            engagement_rate = (video.get('like_count', 0) / max(video.get('view_count', 1), 1)) * 100
+            recent_video_info += f"""#{idx} - {video.get('title')}
+   Views: {video.get('view_count', 0):,} | Likes: {video.get('like_count', 0):,} | Comments: {video.get('comment_count', 0):,}
+   Engagement Rate: {engagement_rate:.2f}%
+   Published: {video.get('published_at')}
+   Duration: {video.get('duration', 'Unknown')}
+   Tags: {', '.join(video.get('tags', [])[:5]) or 'None'}
+
+"""
+        
+        # Strategic analysis instructions
+        task = """=== YOUR TASK ===
+You are an expert YouTube Growth Strategist. Analyze this channel and provide ACTIONABLE guidance.
+
+Return ONLY this JSON (no markdown, no code blocks):
+
+{
+  "strengths": ["strength 1", "strength 2", "strength 3", "strength 4"],
+  "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
+  "growth_strategy": [
+    {"priority": "HIGH", "action": "What to do", "expected_impact": "Expected result", "timeline": "How long"},
+    {"priority": "MEDIUM", "action": "What to do", "expected_impact": "Expected result", "timeline": "How long"},
+    {"priority": "LOW", "action": "What to do", "expected_impact": "Expected result", "timeline": "How long"}
+  ],
+  "content_recommendations": [
+    {"type": "Content type", "description": "Why this works", "frequency": "How often", "example_topics": ["topic1", "topic2", "topic3"]}
+  ],
+  "thumbnail_advice": "Specific thumbnail tips based on top videos",
+  "title_advice": "Specific title optimization tips",
+  "upload_schedule": "Recommended upload schedule",
+  "engagement_tips": ["tip 1", "tip 2", "tip 3"],
+  "scores": {"overall": 75, "consistency": 70, "engagement": 80, "growth_potential": 85},
+  "overall_verdict": "2-3 sentence summary of the channel and most important advice"
+}
+
+Be SPECIFIC and reference actual data. Scores 0-100.
+"""
+        
+        return channel_info + top_video_info + recent_video_info + task
+    
     def prepare_analysis_prompt(
         self, 
         channel_metadata: Dict, 
         videos: List[Dict]
     ) -> str:
         """
-        Prepare structured prompt for Gemini analysis
-        
-        Args:
-            channel_metadata: Channel metadata from YouTube
-            videos: List of video metadata
-            
-        Returns:
-            Formatted prompt string
+        Prepare structured prompt for Gemini analysis (legacy)
         """
         # Format channel info
         channel_info = f"""Channel Information:
@@ -58,7 +138,6 @@ class GeminiAnalyzer:
 
 """
         
-        # Analysis instructions
         task = """Based on the channel and video data above, provide a comprehensive analysis in the following JSON format:
 
 {
@@ -66,20 +145,93 @@ class GeminiAnalyzer:
   "themes": ["theme1", "theme2", "theme3", "theme4", "theme5"],
   "target_audience": "Detailed description of the primary target audience",
   "content_style": "Description of the content style, tone, and presentation approach",
-  "upload_frequency": "Estimated upload frequency pattern (e.g., 'daily', '2-3 times per week', 'weekly', 'irregular')",
+  "upload_frequency": "Estimated upload frequency pattern",
   "confidence_score": 0.95
 }
 
-Important guidelines:
-1. Base your analysis ONLY on the provided data - do not hallucinate
-2. The summary should be factual and insightful
-3. Themes should be specific topics or categories covered
-4. Confidence score should reflect data quality (0.0-1.0)
-5. Return ONLY valid JSON, no additional text
-
+Return ONLY valid JSON, no additional text.
 """
         
         return channel_info + video_info + task
+    
+    def analyze_channel_strategic(
+        self, 
+        channel_metadata: Dict, 
+        top_videos: List[Dict],
+        recent_videos: List[Dict]
+    ) -> Optional[Dict]:
+        """
+        Perform deep strategic analysis of channel
+        """
+        try:
+            prompt = self.prepare_strategic_analysis_prompt(channel_metadata, top_videos, recent_videos)
+            
+            config = types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=8000,
+                system_instruction=(
+                    "You are an expert YouTube Growth Strategist with 10+ years of experience helping creators grow. "
+                    "You analyze channels deeply and provide specific, actionable advice based on data. "
+                    "Always respond with valid JSON only - no markdown code blocks, no extra text."
+                )
+            )
+            
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config
+            )
+            
+            response_text = response.text.strip()
+            print(f"DEBUG: Strategic analysis response length: {len(response_text)}")
+            print(f"DEBUG: Response preview: {response_text[:500]}...")
+            
+            # Extract JSON - improved extraction
+            json_text = response_text
+            
+            # Handle markdown code blocks
+            if '```json' in response_text:
+                # Find the start after ```json
+                json_start = response_text.find('```json') + 7
+                # Find the closing ```
+                json_end = response_text.find('```', json_start)
+                if json_end > json_start:
+                    json_text = response_text[json_start:json_end].strip()
+                    print(f"DEBUG: Extracted from ```json block, length: {len(json_text)}")
+            elif '```' in response_text:
+                json_start = response_text.find('```') + 3
+                # Skip any language identifier on the same line
+                newline_pos = response_text.find('\n', json_start)
+                if newline_pos > json_start:
+                    json_start = newline_pos + 1
+                json_end = response_text.find('```', json_start)
+                if json_end > json_start:
+                    json_text = response_text[json_start:json_end].strip()
+                    print(f"DEBUG: Extracted from ``` block, length: {len(json_text)}")
+            
+            # If still doesn't start with {, try to find JSON object
+            if not json_text.startswith('{'):
+                brace_start = json_text.find('{')
+                brace_end = json_text.rfind('}') + 1
+                if brace_start >= 0 and brace_end > brace_start:
+                    json_text = json_text[brace_start:brace_end]
+                    print(f"DEBUG: Extracted raw JSON from braces, length: {len(json_text)}")
+            
+            print(f"DEBUG: Final JSON text preview: {json_text[:300]}...")
+            
+            analysis = json.loads(json_text)
+            analysis['model_version'] = self.model
+            analysis['top_videos_analyzed'] = len(top_videos)
+            analysis['recent_videos_analyzed'] = len(recent_videos)
+            
+            print(f"DEBUG: Strategic analysis successful!")
+            return analysis
+            
+        except Exception as e:
+            print(f"Strategic analysis error: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def analyze_channel(
         self, 
@@ -87,17 +239,6 @@ Important guidelines:
         videos: List[Dict],
         use_caching: bool = True
     ) -> Optional[Dict]:
-        """
-        Analyze channel using Gemini AI
-        
-        Args:
-            channel_metadata: Channel metadata
-            videos: List of video metadata
-            use_caching: Whether to use context caching
-            
-        Returns:
-            Analysis results dict or None on error
-        """
         try:
             prompt = self.prepare_analysis_prompt(channel_metadata, videos)
             
