@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Channel Analyzer - AI-Powered Insights</title>
+    <meta name="description" content="Analyze any YouTube channel with AI-powered insights using Gemini and YouTube Data API">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="12" fill="url(#gradient)"/>
+                    <path d="M28 14L18 20L28 26V14Z" fill="white"/>
+                    <path d="M12 14L22 20L12 26V14Z" fill="white" opacity="0.6"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#FF0050"/>
+                            <stop offset="100%" stop-color="#8B5CF6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>YouTube Analyzer</span>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span>API Ready</span>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1 class="hero-title">
+                Unlock Deep Insights from
+                <span class="gradient-text">Any YouTube Channel</span>
+            </h1>
+            <p class="hero-subtitle">
+                Powered by Google Gemini AI and YouTube Data API v3
+            </p>
+        </section>
+
+        <!-- Input Section -->
+        <section class="input-section">
+            <form id="analyzeForm" class="analyze-form">
+                <div class="input-wrapper">
+                    <div class="input-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="channelUrl" 
+                        name="channelUrl"
+                        placeholder="Enter YouTube channel URL (e.g., https://youtube.com/@mkbhd)"
+                        required
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button type="submit" class="analyze-btn" id="analyzeBtn">
+                        <span class="btn-text">Analyze Channel</span>
+                        <span class="btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 10h10M10 5l5 5-5 5"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    Supports: @username, /channel/ID, /c/name, /user/name formats
+                </div>
+            </form>
+        </section>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+            <h3 class="loading-title">Analyzing Channel...</h3>
+            <p class="loading-text">This may take 10-30 seconds for first-time analysis</p>
+            <div class="loading-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-icon">1</div>
+                    <div class="step-text">Fetching channel data</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-icon">2</div>
+                    <div class="step-text">Analyzing videos with AI</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-icon">3</div>
+                    <div class="step-text">Generating insights</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Channel Header -->
+            <div class="channel-header">
+                <div class="channel-thumbnail">
+                    <img id="channelThumbnail" src="" alt="Channel thumbnail">
+                </div>
+                <div class="channel-info">
+                    <h2 class="channel-title" id="channelTitle"></h2>
+                    <div class="channel-stats">
+                        <div class="stat">
+                            <div class="stat-value" id="subscriberCount"></div>
+                            <div class="stat-label">Subscribers</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="videoCount"></div>
+                            <div class="stat-label">Videos</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="videosAnalyzed"></div>
+                            <div class="stat-label">Analyzed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Cards -->
+            <div class="analysis-grid">
+                <!-- Summary Card -->
+                <div class="card card-full">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Channel Summary</h3>
+                    </div>
+                    <div class="card-content">
+                        <p class="summary-text" id="summaryText"></p>
+                    </div>
+                </div>
+
+                <!-- Themes Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                <line x1="7" y1="7" x2="7.01" y2="7"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Content Themes</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="themes-list" id="themesList"></div>
+                    </div>
+                </div>
+
+                <!-- Target Audience Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Target Audience</h3>
+                    </div>
+                    <div class="card-content">
+                        <p class="audience-text" id="audienceText"></p>
+                    </div>
+                </div>
+
+                <!-- Content Style Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                                <path d="M2 2l7.586 7.586"/>
+                                <circle cx="11" cy="11" r="2"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Content Style</h3>
+                    </div>
+                    <div class="card-content">
+                        <p class="style-text" id="styleText"></p>
+                    </div>
+                </div>
+
+                <!-- Upload Frequency Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <h3 class="card-title">Upload Frequency</h3>
+                    </div>
+                    <div class="card-content">
+                        <p class="frequency-text" id="frequencyText"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Footer -->
+            <div class="metadata-footer">
+                <div class="metadata-item">
+                    <span class="metadata-label">Confidence:</span>
+                    <span class="metadata-value" id="confidence"></span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Freshness:</span>
+                    <span class="metadata-value" id="freshness"></span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Source:</span>
+                    <span class="metadata-value" id="source"></span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Analyzed:</span>
+                    <span class="metadata-value" id="analyzedAt"></span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn-secondary" id="analyzeAnotherBtn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2.5 10h15M10 2.5l7.5 7.5-7.5 7.5"/>
+                    </svg>
+                    Analyze Another Channel
+                </button>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-state" id="errorState">
+            <div class="error-icon">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                    <circle cx="32" cy="32" r="30" stroke="#EF4444" stroke-width="4"/>
+                    <path d="M32 20v16M32 44h.02" stroke="#EF4444" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h3 class="error-title" id="errorTitle">Analysis Failed</h3>
+            <p class="error-message" id="errorMessage"></p>
+            <button class="btn-secondary" id="tryAgainBtn">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.5 7.5h-5v-5M17.5 7.5l-5-5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 5-13.5"/>
+                </svg>
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Powered by <strong>Google Gemini AI</strong> & <strong>YouTube Data API v3</strong></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
