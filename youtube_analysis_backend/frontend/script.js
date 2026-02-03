@@ -666,3 +666,498 @@ if (typeof module !== 'undefined' && module.exports) {
         formatDate
     };
 }
+
+// ==================== COACHING MODE ====================
+
+// Coaching State
+let coachingState = {
+    sessionId: null,
+    currentPhase: 0,
+    completedPhases: [],
+    channelId: null
+};
+
+// Coaching DOM Elements
+const coachingElements = {
+    container: document.getElementById('coachingContainer'),
+    hero: document.getElementById('coachingHero'),
+    profileSetup: document.getElementById('profileSetup'),
+    session: document.getElementById('coachingSession'),
+    loading: document.getElementById('coachingLoading'),
+    profileForm: document.getElementById('profileForm'),
+    chatMessages: document.getElementById('chatMessages'),
+    chatInput: document.getElementById('chatInput'),
+    sendChatBtn: document.getElementById('sendChatBtn'),
+    quickActions: document.getElementById('quickActions'),
+    newSessionBtn: document.getElementById('newSessionBtn'),
+    modeToggle: document.getElementById('modeToggle')
+};
+
+/**
+ * Initialize coaching mode
+ */
+function initCoaching() {
+    if (!coachingElements.modeToggle) return;
+    
+    // Mode toggle listeners
+    coachingElements.modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => handleModeSwitch(btn.dataset.mode));
+    });
+    
+    // Profile form submit
+    if (coachingElements.profileForm) {
+        coachingElements.profileForm.addEventListener('submit', handleStartCoaching);
+    }
+    
+    // Chat input
+    if (coachingElements.sendChatBtn) {
+        coachingElements.sendChatBtn.addEventListener('click', handleSendMessage);
+    }
+    if (coachingElements.chatInput) {
+        coachingElements.chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSendMessage();
+        });
+    }
+    
+    // Quick action buttons
+    if (coachingElements.quickActions) {
+        coachingElements.quickActions.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', () => handleQuickAction(btn.dataset.action));
+        });
+    }
+    
+    // New session button
+    if (coachingElements.newSessionBtn) {
+        coachingElements.newSessionBtn.addEventListener('click', handleNewSession);
+    }
+}
+
+/**
+ * Handle mode switch between analysis and coaching
+ */
+function handleModeSwitch(mode) {
+    // Update button states
+    coachingElements.modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    
+    // Show/hide appropriate sections
+    const analysisElements = [
+        elements.heroSection,
+        elements.inputSection,
+        elements.loadingState,
+        elements.resultsSection,
+        elements.errorState,
+        elements.profileSection
+    ];
+    
+    if (mode === 'coaching') {
+        // Hide analysis mode
+        analysisElements.forEach(el => {
+            if (el) el.style.display = 'none';
+        });
+        // Show coaching mode
+        if (coachingElements.container) {
+            coachingElements.container.style.display = 'block';
+        }
+    } else {
+        // Hide coaching mode
+        if (coachingElements.container) {
+            coachingElements.container.style.display = 'none';
+        }
+        // Show analysis mode (restore appropriate state)
+        if (savedProfile) {
+            showProfile(savedProfile);
+        } else {
+            if (elements.heroSection) elements.heroSection.style.display = 'block';
+            if (elements.inputSection) elements.inputSection.style.display = 'block';
+        }
+    }
+}
+
+/**
+ * Handle start coaching session
+ */
+async function handleStartCoaching(event) {
+    event.preventDefault();
+    
+    const channelUrl = document.getElementById('coachingChannelUrl').value.trim();
+    if (!channelUrl || !isValidYouTubeUrl(channelUrl)) {
+        alert('Please enter a valid YouTube channel URL');
+        return;
+    }
+    
+    // Collect profile data
+    const profileData = {
+        channel_url: channelUrl,
+        preferred_genres: document.getElementById('preferredGenres').value
+            .split(',').map(s => s.trim()).filter(s => s),
+        future_goals: document.getElementById('futureGoals').value.trim(),
+        time_horizon: document.getElementById('timeHorizon').value,
+        effort_level: document.getElementById('effortLevel').value,
+        content_frequency: document.getElementById('contentFrequency').value.trim(),
+        editing_skills: document.getElementById('editingSkills').value,
+        current_challenges: document.getElementById('currentChallenges').value
+            .split(',').map(s => s.trim()).filter(s => s)
+    };
+    
+    // Show loading
+    showCoachingLoading(true);
+    
+    try {
+        // Save profile first
+        await fetch(`${API_BASE_URL}/${API_VERSION}/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData)
+        });
+        
+        // Start coaching session
+        const response = await fetch(`${API_BASE_URL}/${API_VERSION}/coaching/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel_url: channelUrl })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.detail?.error || 'Failed to start coaching');
+        }
+        
+        // Store session state
+        coachingState.sessionId = data.session_id;
+        coachingState.currentPhase = data.current_phase;
+        coachingState.completedPhases = data.completed_phases;
+        coachingState.channelId = data.channel?.id;
+        
+        // Show coaching session
+        showCoachingSession();
+        
+        // Add welcome message
+        addCoachMessage(`👋 Welcome! I'm your YouTube growth coach. I've analyzed **${data.channel?.title}** with ${formatNumber(data.channel?.subscribers)} subscribers.`, 'intro');
+        
+        // Add Phase 1 response
+        renderPhaseResponse(data.response, 1);
+        
+        // Update phase progress
+        updatePhaseProgress(1, data.completed_phases);
+        
+    } catch (error) {
+        console.error('Coaching start error:', error);
+        alert('Failed to start coaching: ' + error.message);
+    } finally {
+        showCoachingLoading(false);
+    }
+}
+
+/**
+ * Handle sending a message in coaching chat
+ */
+async function handleSendMessage() {
+    const message = coachingElements.chatInput.value.trim();
+    if (!message || !coachingState.sessionId) return;
+    
+    // Add user message to chat
+    addUserMessage(message);
+    coachingElements.chatInput.value = '';
+    
+    // Send to API
+    await continueCoaching(message, 'refine');
+}
+
+/**
+ * Handle quick action buttons
+ */
+async function handleQuickAction(action) {
+    if (!coachingState.sessionId) return;
+    await continueCoaching(null, action);
+}
+
+/**
+ * Continue coaching session
+ */
+async function continueCoaching(message, action) {
+    showCoachingLoading(true);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/${API_VERSION}/coaching/continue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: coachingState.sessionId,
+                message: message,
+                action: action
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.detail?.error || 'Failed to continue coaching');
+        }
+        
+        // Update state
+        coachingState.currentPhase = data.current_phase;
+        coachingState.completedPhases = data.completed_phases;
+        
+        // Render response
+        renderPhaseResponse(data.response, data.current_phase);
+        
+        // Update phase progress
+        updatePhaseProgress(data.current_phase, data.completed_phases);
+        
+        // Update quick actions
+        updateQuickActions(data.current_phase);
+        
+    } catch (error) {
+        console.error('Coaching continue error:', error);
+        addCoachMessage('❌ Sorry, something went wrong. Please try again.', 'error');
+    } finally {
+        showCoachingLoading(false);
+    }
+}
+
+/**
+ * Handle new session button
+ */
+function handleNewSession() {
+    coachingState = {
+        sessionId: null,
+        currentPhase: 0,
+        completedPhases: [],
+        channelId: null
+    };
+    
+    // Clear chat
+    if (coachingElements.chatMessages) {
+        coachingElements.chatMessages.innerHTML = '';
+    }
+    
+    // Show profile setup
+    if (coachingElements.session) coachingElements.session.style.display = 'none';
+    if (coachingElements.profileSetup) coachingElements.profileSetup.style.display = 'block';
+    if (coachingElements.hero) coachingElements.hero.style.display = 'block';
+    
+    // Reset phase progress
+    document.querySelectorAll('.phase-item').forEach(item => {
+        item.classList.remove('active', 'completed');
+    });
+}
+
+/**
+ * Show/hide coaching loading state
+ */
+function showCoachingLoading(show) {
+    if (coachingElements.loading) {
+        coachingElements.loading.style.display = show ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Show coaching session UI
+ */
+function showCoachingSession() {
+    if (coachingElements.profileSetup) coachingElements.profileSetup.style.display = 'none';
+    if (coachingElements.hero) coachingElements.hero.style.display = 'none';
+    if (coachingElements.session) coachingElements.session.style.display = 'block';
+}
+
+/**
+ * Add a coach message to chat
+ */
+function addCoachMessage(text, type = 'normal') {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message coach';
+    msgDiv.innerHTML = `
+        <div class="coach-avatar">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+            </svg>
+        </div>
+        <div class="message-content">
+            <p>${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
+        </div>
+    `;
+    coachingElements.chatMessages.appendChild(msgDiv);
+    scrollChatToBottom();
+}
+
+/**
+ * Add a user message to chat
+ */
+function addUserMessage(text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message user';
+    msgDiv.innerHTML = `
+        <div class="message-content">
+            <p>${text}</p>
+        </div>
+    `;
+    coachingElements.chatMessages.appendChild(msgDiv);
+    scrollChatToBottom();
+}
+
+/**
+ * Render phase response in chat
+ */
+function renderPhaseResponse(response, phase) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message coach';
+    
+    let content = '';
+    const phaseNames = {
+        1: '📊 Phase 1: Current Reality Check',
+        2: '📈 Phase 2: Trend Analysis',
+        3: '🎯 Phase 3: Opportunity Mapping',
+        4: '💡 Phase 4: Content Idea',
+        5: '⚙️ Phase 5: Execution Strategy',
+        6: '🗺️ Phase 6: Long-Term Roadmap'
+    };
+    
+    content = `<h4>${phaseNames[phase] || 'Analysis'}</h4>`;
+    
+    // Render based on phase
+    if (phase === 1 && response) {
+        content += `<p><strong>Channel Identity:</strong> ${response.channel_identity || 'N/A'}</p>`;
+        if (response.what_works?.length) {
+            content += `<p><strong>What's Working:</strong></p><ul>`;
+            response.what_works.forEach(item => {
+                content += `<li>${item.content} - <em>${item.why_it_works}</em></li>`;
+            });
+            content += `</ul>`;
+        }
+        if (response.gap_analysis) {
+            content += `<p><strong>Gap Analysis:</strong> ${response.gap_analysis}</p>`;
+        }
+        if (response.summary) {
+            content += `<p><strong>Summary:</strong> ${response.summary}</p>`;
+        }
+    } else if (phase === 2 && response) {
+        if (response.relevant_trends?.length) {
+            content += `<p><strong>Relevant Trends:</strong></p>`;
+            response.relevant_trends.forEach(trend => {
+                content += `<div class="data-item"><strong>${trend.trend_name}</strong> ${trend.description} - ${trend.why_relevant}</div>`;
+            });
+        }
+        if (response.summary) {
+            content += `<p>${response.summary}</p>`;
+        }
+    } else if (phase === 3 && response) {
+        if (response.best_opportunities?.length) {
+            content += `<p><strong>Best Opportunities:</strong></p>`;
+            response.best_opportunities.forEach(opp => {
+                content += `<div class="data-item"><strong>${opp.opportunity}</strong> Fit: ${opp.fit_score}% | Effort: ${opp.effort_required} | ${opp.why_fits}</div>`;
+            });
+        }
+        if (response.summary) {
+            content += `<p>${response.summary}</p>`;
+        }
+    } else if (phase === 4 && response?.idea) {
+        const idea = response.idea;
+        content += `
+            <div class="data-item">
+                <strong>💡 ${idea.title}</strong>
+                <p>${idea.concept}</p>
+                <p><strong>Why it works:</strong> ${idea.why_works_for_channel}</p>
+                <p><strong>Format:</strong> ${idea.format} (${idea.suggested_duration})</p>
+                <p><strong>Hook:</strong> "${idea.hook}"</p>
+                <p><strong>Expected outcome:</strong> ${idea.expected_outcome}</p>
+            </div>
+        `;
+        if (response.ask_creator) {
+            content += `<p><em>${response.ask_creator}</em></p>`;
+        }
+    } else if (phase === 5 && response) {
+        if (response.posting_strategy) {
+            content += `<p><strong>Posting Strategy:</strong> ${response.posting_strategy.frequency} - ${response.posting_strategy.reasoning}</p>`;
+        }
+        if (response.content_mix) {
+            content += `<p><strong>Content Mix:</strong> ${response.content_mix.ratio}</p>`;
+        }
+        if (response.summary) {
+            content += `<p>${response.summary}</p>`;
+        }
+    } else if (phase === 6 && response?.roadmap) {
+        content += `<p><strong>Your 90-Day Roadmap:</strong></p>`;
+        ['30_days', '60_days', '90_days'].forEach(period => {
+            if (response.roadmap[period]) {
+                const p = response.roadmap[period];
+                content += `<div class="data-item"><strong>${period.replace('_', ' ')}</strong>: ${p.focus} - ${p.milestone}</div>`;
+            }
+        });
+        if (response.final_advice) {
+            content += `<p><strong>Final Advice:</strong> ${response.final_advice}</p>`;
+        }
+    } else {
+        // Generic JSON display
+        content += `<pre style="font-size: 0.8rem; overflow: auto;">${JSON.stringify(response, null, 2)}</pre>`;
+    }
+    
+    msgDiv.innerHTML = `
+        <div class="coach-avatar">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+            </svg>
+        </div>
+        <div class="message-content">${content}</div>
+    `;
+    
+    coachingElements.chatMessages.appendChild(msgDiv);
+    scrollChatToBottom();
+}
+
+/**
+ * Update phase progress indicators
+ */
+function updatePhaseProgress(currentPhase, completedPhases) {
+    document.querySelectorAll('.phase-item').forEach(item => {
+        const phase = parseInt(item.dataset.phase);
+        item.classList.remove('active', 'completed');
+        
+        if (completedPhases.includes(phase)) {
+            item.classList.add('completed');
+        }
+        if (phase === currentPhase) {
+            item.classList.add('active');
+        }
+    });
+}
+
+/**
+ * Update quick action buttons based on current phase
+ */
+function updateQuickActions(phase) {
+    const continueBtn = coachingElements.quickActions.querySelector('[data-action="continue"]');
+    const anotherIdeaBtn = coachingElements.quickActions.querySelector('[data-action="another_idea"]');
+    
+    if (phase === 4) {
+        if (anotherIdeaBtn) anotherIdeaBtn.style.display = 'inline-block';
+        if (continueBtn) continueBtn.textContent = 'Continue to Execution';
+    } else if (phase === 6) {
+        if (continueBtn) continueBtn.style.display = 'none';
+        if (anotherIdeaBtn) anotherIdeaBtn.style.display = 'none';
+    } else {
+        if (anotherIdeaBtn) anotherIdeaBtn.style.display = 'none';
+        if (continueBtn) {
+            continueBtn.style.display = 'inline-block';
+            continueBtn.textContent = 'Continue to Next Phase';
+        }
+    }
+}
+
+/**
+ * Scroll chat to bottom
+ */
+function scrollChatToBottom() {
+    if (coachingElements.chatMessages) {
+        coachingElements.chatMessages.scrollTop = coachingElements.chatMessages.scrollHeight;
+    }
+}
+
+// Initialize coaching when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCoaching);
+} else {
+    initCoaching();
+}

@@ -3,312 +3,636 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Channel Analyzer - Strategic Growth Insights</title>
-    <meta name="description" content="Get strategic growth guidance for any YouTube channel with AI-powered analysis">
+    <title>YouTube Growth Coach</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --bg-primary: #0F0F1E;
+            --bg-secondary: #1A1A2E;
+            --bg-card: rgba(26, 26, 46, 0.9);
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0AEC0;
+            --text-muted: #718096;
+            --border-color: rgba(139, 92, 246, 0.2);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), #FF0050);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Profile Setup */
+        .setup-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .setup-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), #FF0050);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Chat Section */
+        .chat-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chat-header .channel-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-header .channel-name {
+            font-weight: 600;
+        }
+        
+        .chat-header .channel-subs {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .change-btn {
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .change-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.assistant {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #FF0050);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        
+        .message.assistant .message-content {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+        
+        .message.user .message-content {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .chat-input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input-wrapper input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        
+        .chat-input-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .send-btn {
+            padding: 12px 20px;
+            background: var(--primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .send-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading p {
+            color: var(--text-secondary);
+        }
+        
+        /* Typing indicator */
+        .typing {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+        
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+        
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+            .message-content { max-width: 85%; }
+        }
+        
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
-    <!-- Background Effects -->
-    <div class="background-effects">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-    </div>
-
-    <!-- Main Container -->
     <div class="container">
-        <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="40" height="40" rx="12" fill="url(#gradient)"/>
-                    <path d="M28 14L18 20L28 26V14Z" fill="white"/>
-                    <path d="M12 14L22 20L12 26V14Z" fill="white" opacity="0.6"/>
-                    <defs>
-                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
-                            <stop offset="0%" stop-color="#FF0050"/>
-                            <stop offset="100%" stop-color="#8B5CF6"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <span>YouTube Strategic Analyzer</span>
-            </div>
-            <div class="header-right">
-                <div class="status-badge" id="statusBadge">
-                    <span class="status-dot"></span>
-                    <span>API Ready</span>
-                </div>
-            </div>
+            <h1>🎬 YouTube Growth Coach</h1>
+            <p>Get personalized advice for your channel</p>
         </header>
 
-        <!-- Profile Section (shows when channel is saved) -->
-        <section class="profile-section" id="profileSection" style="display: none;">
-            <div class="profile-card">
-                <div class="profile-header">
-                    <img class="profile-thumbnail" id="profileThumbnail" src="" alt="Channel">
-                    <div class="profile-info">
-                        <h2 class="profile-name" id="profileName"></h2>
-                        <div class="profile-stats">
-                            <span id="profileSubs"></span> subscribers • <span id="profileVideos"></span> videos
-                        </div>
+        <!-- Profile Setup -->
+        <section class="setup-section" id="setupSection">
+            <h2>📋 Tell me about your channel</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>YouTube Channel URL *</label>
+                    <input type="text" id="channelUrl" placeholder="https://youtube.com/@yourchannel" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Content Genres</label>
+                        <input type="text" id="genres" placeholder="e.g., tech, gaming, vlogs">
+                        <span class="hint">Separate with commas</span>
                     </div>
-                    <button class="change-channel-btn" id="changeChannelBtn" title="Change Channel">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 13v4h4l10-10-4-4L4 13z"/>
-                            <path d="M12 5l4 4"/>
-                        </svg>
-                    </button>
-                </div>
-                <button class="reanalyze-btn" id="reanalyzeBtn">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 4v6h6"/>
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                    </svg>
-                    <span>Run New Analysis</span>
-                </button>
-            </div>
-        </section>
-
-        <!-- Hero Section -->
-        <section class="hero" id="heroSection">
-            <h1 class="hero-title">
-                Get Strategic Growth Insights for
-                <span class="gradient-text">Your YouTube Channel</span>
-            </h1>
-            <p class="hero-subtitle">
-                AI-powered analysis of your top performing and recent videos to help you grow
-            </p>
-        </section>
-
-        <!-- Input Section -->
-        <section class="input-section">
-            <form id="analyzeForm" class="analyze-form">
-                <div class="input-wrapper">
-                    <div class="input-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-                            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-                        </svg>
+                    <div class="form-group">
+                        <label>Your Main Goal</label>
+                        <input type="text" id="goals" placeholder="e.g., Reach 10k subs">
                     </div>
-                    <input 
-                        type="text" 
-                        id="channelUrl" 
-                        name="channelUrl"
-                        placeholder="Enter YouTube channel URL (e.g., https://youtube.com/@mkbhd)"
-                        required
-                        autocomplete="off"
-                        spellcheck="false"
-                    >
-                    <button type="submit" class="analyze-btn" id="analyzeBtn">
-                        <span class="btn-text">Get Strategic Analysis</span>
-                        <span class="btn-icon">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 10h10M10 5l5 5-5 5"/>
-                            </svg>
-                        </span>
-                    </button>
                 </div>
-                <div class="input-hint">
-                    We'll analyze your top 5 most viewed videos and latest 5 videos to give you growth strategies
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Time Commitment</label>
+                        <select id="effort">
+                            <option value="low">Low (1-2 hrs/week)</option>
+                            <option value="medium" selected>Medium (5-10 hrs/week)</option>
+                            <option value="high">High (15+ hrs/week)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Editing Skills</label>
+                        <select id="skills">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate" selected>Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
                 </div>
+                
+                <div class="form-group">
+                    <label>Current Challenges</label>
+                    <input type="text" id="challenges" placeholder="e.g., low views, no ideas, inconsistent">
+                    <span class="hint">What's holding you back?</span>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">Start Coaching</button>
             </form>
         </section>
 
         <!-- Loading State -->
-        <div class="loading-state" id="loadingState">
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-            </div>
-            <h3 class="loading-title">Analyzing Your Channel Strategy...</h3>
-            <p class="loading-text">This takes 15-45 seconds for deep strategic analysis</p>
-            <div class="loading-steps">
-                <div class="step active" data-step="1">
-                    <div class="step-icon">1</div>
-                    <div class="step-text">Fetching channel data</div>
-                </div>
-                <div class="step" data-step="2">
-                    <div class="step-icon">2</div>
-                    <div class="step-text">Analyzing top & recent videos</div>
-                </div>
-                <div class="step" data-step="3">
-                    <div class="step-icon">3</div>
-                    <div class="step-text">Generating growth strategies</div>
-                </div>
-            </div>
+        <div class="loading hidden" id="loadingState">
+            <div class="spinner"></div>
+            <p>Analyzing your channel...</p>
         </div>
 
-        <!-- Strategic Results Section -->
-        <div class="results-section" id="resultsSection">
-            <!-- Channel Header -->
-            <div class="channel-header">
-                <div class="channel-thumbnail">
-                    <img id="channelThumbnail" src="" alt="Channel thumbnail">
-                </div>
+        <!-- Chat Section -->
+        <section class="chat-section hidden" id="chatSection">
+            <div class="chat-header">
                 <div class="channel-info">
-                    <h2 class="channel-title" id="channelTitle"></h2>
-                    <div class="channel-stats">
-                        <div class="stat">
-                            <div class="stat-value" id="subscriberCount"></div>
-                            <div class="stat-label">Subscribers</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" id="videoCount"></div>
-                            <div class="stat-label">Videos</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value" id="videosAnalyzed"></div>
-                            <div class="stat-label">Analyzed</div>
-                        </div>
+                    <div class="avatar">🎬</div>
+                    <div>
+                        <div class="channel-name" id="channelName">Your Channel</div>
+                        <div class="channel-subs" id="channelSubs"></div>
                     </div>
                 </div>
+                <button class="change-btn" id="changeBtn">Change Channel</button>
             </div>
-
-            <!-- Scores Section -->
-            <div class="scores-section">
-                <h3 class="section-title">📊 Content Performance Scores</h3>
-                <div class="scores-grid">
-                    <div class="score-card">
-                        <div class="score-circle overall" id="overallScore">
-                            <span class="score-value">0</span>
-                        </div>
-                        <div class="score-label">Overall Score</div>
-                    </div>
-                    <div class="score-card">
-                        <div class="score-circle consistency" id="consistencyScore">
-                            <span class="score-value">0</span>
-                        </div>
-                        <div class="score-label">Consistency</div>
-                    </div>
-                    <div class="score-card">
-                        <div class="score-circle engagement" id="engagementScore">
-                            <span class="score-value">0</span>
-                        </div>
-                        <div class="score-label">Engagement</div>
-                    </div>
-                    <div class="score-card">
-                        <div class="score-circle growth" id="growthScore">
-                            <span class="score-value">0</span>
-                        </div>
-                        <div class="score-label">Growth Potential</div>
-                    </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will appear here -->
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chatInput" placeholder="Ask me anything about your channel...">
+                    <button class="send-btn" id="sendBtn">Send</button>
                 </div>
             </div>
-
-            <!-- Overall Verdict -->
-            <div class="verdict-section card">
-                <h3 class="card-title">🎯 Overall Verdict</h3>
-                <p class="verdict-text" id="verdictText"></p>
-            </div>
-
-            <!-- Strengths & Weaknesses -->
-            <div class="analysis-grid-2">
-                <div class="card strengths-card">
-                    <h3 class="card-title">✅ Strengths</h3>
-                    <ul class="bullet-list" id="strengthsList"></ul>
-                </div>
-                <div class="card weaknesses-card">
-                    <h3 class="card-title">⚠️ Areas for Improvement</h3>
-                    <ul class="bullet-list" id="weaknessesList"></ul>
-                </div>
-            </div>
-
-            <!-- Growth Strategies -->
-            <div class="strategies-section">
-                <h3 class="section-title">🚀 Growth Strategies</h3>
-                <div class="strategies-list" id="strategiesList"></div>
-            </div>
-
-            <!-- Content Recommendations -->
-            <div class="recommendations-section">
-                <h3 class="section-title">💡 Content Recommendations</h3>
-                <div class="recommendations-list" id="recommendationsList"></div>
-            </div>
-
-            <!-- Quick Tips Row -->
-            <div class="tips-grid">
-                <div class="card tip-card">
-                    <h3 class="card-title">🖼️ Thumbnail Advice</h3>
-                    <p class="tip-text" id="thumbnailAdvice"></p>
-                </div>
-                <div class="card tip-card">
-                    <h3 class="card-title">📝 Title Optimization</h3>
-                    <p class="tip-text" id="titleAdvice"></p>
-                </div>
-                <div class="card tip-card">
-                    <h3 class="card-title">📅 Upload Schedule</h3>
-                    <p class="tip-text" id="uploadSchedule"></p>
-                </div>
-            </div>
-
-            <!-- Engagement Tips -->
-            <div class="engagement-section card">
-                <h3 class="card-title">💬 Engagement Tips</h3>
-                <ul class="bullet-list" id="engagementTips"></ul>
-            </div>
-
-            <!-- Videos Analyzed -->
-            <div class="videos-section">
-                <h3 class="section-title">📹 Videos Analyzed</h3>
-                <div class="videos-tabs">
-                    <button class="tab-btn active" data-tab="top">Top 5 by Views</button>
-                    <button class="tab-btn" data-tab="recent">Latest 5 Videos</button>
-                </div>
-                <div class="videos-content">
-                    <div class="videos-list" id="topVideosList"></div>
-                    <div class="videos-list hidden" id="recentVideosList"></div>
-                </div>
-            </div>
-
-            <!-- Metadata Footer -->
-            <div class="metadata-footer">
-                <div class="metadata-item">
-                    <span class="metadata-label">Analysis Model:</span>
-                    <span class="metadata-value" id="modelVersion"></span>
-                </div>
-                <div class="metadata-item">
-                    <span class="metadata-label">Analyzed:</span>
-                    <span class="metadata-value" id="analyzedAt"></span>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn-secondary" id="analyzeAnotherBtn">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M2.5 10h15M10 2.5l7.5 7.5-7.5 7.5"/>
-                    </svg>
-                    Analyze Another Channel
-                </button>
-            </div>
-        </div>
-
-        <!-- Error State -->
-        <div class="error-state" id="errorState">
-            <div class="error-icon">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                    <circle cx="32" cy="32" r="30" stroke="#EF4444" stroke-width="4"/>
-                    <path d="M32 20v16M32 44h.02" stroke="#EF4444" stroke-width="4" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <h3 class="error-title" id="errorTitle">Analysis Failed</h3>
-            <p class="error-message" id="errorMessage"></p>
-            <button class="btn-secondary" id="tryAgainBtn">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17.5 7.5h-5v-5M17.5 7.5l-5-5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 5-13.5"/>
-                </svg>
-                Try Again
-            </button>
-        </div>
+        </section>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>Powered by <strong>Google Gemini AI</strong> & <strong>YouTube Data API v3</strong></p>
-    </footer>
-
-    <script src="/static/script.js"></script>
+    <script>
+        const API_URL = 'http://localhost:8000/v1';
+        
+        let state = {
+            channelId: null,
+            channelName: null,
+            profileId: null
+        };
+        
+        // DOM Elements
+        const setupSection = document.getElementById('setupSection');
+        const loadingState = document.getElementById('loadingState');
+        const chatSection = document.getElementById('chatSection');
+        const profileForm = document.getElementById('profileForm');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const changeBtn = document.getElementById('changeBtn');
+        const channelName = document.getElementById('channelName');
+        const channelSubs = document.getElementById('channelSubs');
+        
+        // Initialize
+        function init() {
+            // Check for saved session
+            const saved = localStorage.getItem('coachSession');
+            if (saved) {
+                state = JSON.parse(saved);
+                showChat();
+                addMessage('assistant', `Welcome back! I'm ready to help with **${state.channelName}**. What would you like to know?`);
+            }
+            
+            // Event listeners
+            profileForm.addEventListener('submit', handleProfileSubmit);
+            sendBtn.addEventListener('click', handleSendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) handleSendMessage();
+            });
+            changeBtn.addEventListener('click', handleChangeChannel);
+        }
+        
+        // Handle profile form submission
+        async function handleProfileSubmit(e) {
+            e.preventDefault();
+            
+            const channelUrl = document.getElementById('channelUrl').value.trim();
+            if (!channelUrl) return alert('Please enter a channel URL');
+            
+            const profileData = {
+                channel_url: channelUrl,
+                preferred_genres: document.getElementById('genres').value.split(',').map(s => s.trim()).filter(s => s),
+                future_goals: document.getElementById('goals').value.trim(),
+                effort_level: document.getElementById('effort').value,
+                editing_skills: document.getElementById('skills').value,
+                current_challenges: document.getElementById('challenges').value.split(',').map(s => s.trim()).filter(s => s)
+            };
+            
+            showLoading();
+            
+            try {
+                // Save profile and analyze channel
+                const response = await fetch(`${API_URL}/coach/setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail?.error || data.error || 'Setup failed');
+                }
+                
+                // Save state
+                state = {
+                    channelId: data.channel_id,
+                    channelName: data.channel_name,
+                    profileId: data.profile_id
+                };
+                localStorage.setItem('coachSession', JSON.stringify(state));
+                
+                // Show chat
+                showChat();
+                addMessage('assistant', `Great! I've analyzed **${state.channelName}** and I'm ready to help. Ask me anything about growing your channel, content ideas, or strategy!`);
+                
+            } catch (error) {
+                console.error('Setup error:', error);
+                alert('Error: ' + error.message);
+                showSetup();
+            }
+        }
+        
+        // Handle sending chat message
+        async function handleSendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || !state.channelId) return;
+            
+            chatInput.value = '';
+            addMessage('user', message);
+            
+            // Show typing indicator
+            const typingId = showTyping();
+            sendBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_URL}/coach/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        channel_id: state.channelId,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                removeTyping(typingId);
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail?.error || 'Failed to get response');
+                }
+                
+                addMessage('assistant', data.response);
+                
+            } catch (error) {
+                removeTyping(typingId);
+                addMessage('assistant', 'Sorry, something went wrong. Please try again.');
+                console.error('Chat error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+        
+        // Handle change channel
+        function handleChangeChannel() {
+            localStorage.removeItem('coachSession');
+            state = { channelId: null, channelName: null, profileId: null };
+            chatMessages.innerHTML = '';
+            showSetup();
+        }
+        
+        // UI helpers
+        function showSetup() {
+            setupSection.classList.remove('hidden');
+            loadingState.classList.add('hidden');
+            chatSection.classList.add('hidden');
+        }
+        
+        function showLoading() {
+            setupSection.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            chatSection.classList.add('hidden');
+        }
+        
+        function showChat() {
+            setupSection.classList.add('hidden');
+            loadingState.classList.add('hidden');
+            chatSection.classList.remove('hidden');
+            channelName.textContent = state.channelName || 'Your Channel';
+            chatInput.focus();
+        }
+        
+        function addMessage(role, content) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            
+            // Convert **text** to bold
+            const formatted = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            if (role === 'assistant') {
+                div.innerHTML = `
+                    <div class="avatar">🤖</div>
+                    <div class="message-content">${formatted}</div>
+                `;
+            } else {
+                div.innerHTML = `<div class="message-content">${formatted}</div>`;
+            }
+            
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function showTyping() {
+            const id = 'typing-' + Date.now();
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.id = id;
+            div.innerHTML = `
+                <div class="avatar">🤖</div>
+                <div class="typing"><span></span><span></span><span></span></div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return id;
+        }
+        
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+        
+        // Start
+        init();
+    </script>
 </body>
 </html>

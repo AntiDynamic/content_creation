@@ -137,3 +137,79 @@ class AnalysisJob(Base):
     
     def __repr__(self):
         return f"<AnalysisJob(job_id='{self.job_id}', status='{self.status}')>"
+
+
+class CreatorProfile(Base):
+    """Creator preferences and goals for personalized coaching"""
+    __tablename__ = "creator_profiles"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    channel_id = Column(String(50), index=True, nullable=False, unique=True)
+    
+    # Channel Info (cached from YouTube)
+    channel_name = Column(String(255))
+    subscriber_count = Column(Integer)
+    video_count = Column(Integer)
+    
+    # AI-Generated Channel Summary (stored, not shown to user)
+    channel_summary = Column(Text)  # Gemini's analysis of the channel
+    
+    # Creator Preferences
+    preferred_genres = Column(JSON)  # Array of genres/niches they want to focus on
+    future_goals = Column(Text)  # What they want to achieve
+    time_horizon = Column(String(50))  # e.g., "30 days", "90 days", "6 months"
+    effort_level = Column(String(20))  # "low", "medium", "high"
+    content_frequency = Column(String(50))  # How often they can create content
+    
+    # Constraints
+    equipment_level = Column(String(50))  # "basic", "intermediate", "professional"
+    editing_skills = Column(String(50))  # "beginner", "intermediate", "advanced"
+    time_per_video = Column(String(50))  # Estimated hours per video
+    
+    # Current Focus
+    current_challenges = Column(JSON)  # Array of challenges they face
+    topics_to_avoid = Column(JSON)  # Topics they don't want to cover
+    
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    def __repr__(self):
+        return f"<CreatorProfile(channel_id='{self.channel_id}')>"
+
+
+class CoachingSession(Base):
+    """Track coaching conversation sessions with phase progress"""
+    __tablename__ = "coaching_sessions"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(50), unique=True, index=True, nullable=False)
+    channel_id = Column(String(50), index=True, nullable=False)
+    
+    # Phase Tracking
+    current_phase = Column(Integer, default=1)  # 1-6
+    phase_1_completed = Column(Boolean, default=False)
+    phase_2_completed = Column(Boolean, default=False)
+    phase_3_completed = Column(Boolean, default=False)
+    phase_4_completed = Column(Boolean, default=False)
+    phase_5_completed = Column(Boolean, default=False)
+    phase_6_completed = Column(Boolean, default=False)
+    
+    # Phase Results (stored as JSON)
+    phase_1_result = Column(JSON)  # Current Reality Check
+    phase_2_result = Column(JSON)  # Trend Analysis
+    phase_3_result = Column(JSON)  # Opportunity Mapping
+    phase_4_result = Column(JSON)  # Content Ideas (array of ideas)
+    phase_5_result = Column(JSON)  # Execution Strategy
+    phase_6_result = Column(JSON)  # Long-Term Roadmap
+    
+    # Conversation History
+    conversation_history = Column(JSON)  # Array of messages
+    
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    last_interaction = Column(DateTime, server_default=func.now())
+    
+    def __repr__(self):
+        return f"<CoachingSession(session_id='{self.session_id}', phase={self.current_phase})>"
