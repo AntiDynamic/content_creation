@@ -2,6 +2,13 @@
 
 A comprehensive YouTube channel analysis platform with AI-powered insights using Google's Gemini API.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AntiDynamic/content_creation)
+
+## 🚀 Live Demo
+
+- **Production**: https://contentcreation-six.vercel.app
+- **API Docs**: https://contentcreation-six.vercel.app/docs
+
 ## 📁 Project Structure
 
 ```
@@ -54,13 +61,25 @@ content_creation/
 
 ## 🚀 Quick Start
 
+### Local Development
+
 1. **Setup Environment**
    ```bash
-   # Windows
-   .\scripts\setup.ps1
+   # Clone the repository
+   git clone https://github.com/AntiDynamic/content_creation.git
+   cd content_creation
    
-   # Linux/Mac
-   ./scripts/setup.sh
+   # Create virtual environment
+   python -m venv venv
+   
+   # Activate virtual environment
+   # Windows:
+   venv\Scripts\activate
+   # Linux/Mac:
+   source venv/bin/activate
+   
+   # Install dependencies
+   pip install -r backend/requirements.txt
    ```
 
 2. **Configure API Keys**
@@ -71,11 +90,30 @@ content_creation/
    ```bash
    # Windows
    .\scripts\RUN_ME.bat
+   
+   # Linux/Mac
+   cd backend
+   python main.py
    ```
 
 4. **Access the Application**
    - Frontend: http://localhost:8000
    - API Docs: http://localhost:8000/docs
+
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Link and deploy
+vercel link
+vercel --prod
+```
+
+Don't forget to add your environment variables in Vercel dashboard:
+- `YOUTUBE_API_KEY`
+- `GEMINI_API_KEY`
 
 ## 📚 Documentation
 
