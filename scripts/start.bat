@@ -18,7 +18,7 @@ echo Backend will be available at: http://localhost:8000
 echo API Documentation: http://localhost:8000/v1/docs
 echo.
 
-cd /d "%~dp0"
+cd /d "%~dp0\..\backend"
 start "YouTube Backend" C:\Users\pares\OneDrive\Desktop\content_creation\.venv\Scripts\uvicorn.exe main:app --host 0.0.0.0 --port 8000 --reload
 
 timeout /t 3 /nobreak > nul
@@ -48,3 +48,4 @@ echo Servers are running in separate windows.
 echo Close those windows to stop the servers.
 echo.
 pause
+

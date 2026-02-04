@@ -1,0 +1,16 @@
+{
+  "name": "youtube-channel-analyzer",
+  "version": "1.0.0",
+  "description": "AI-powered YouTube channel analysis platform",
+  "scripts": {
+    "dev": "cd frontend && python -m http.server 3000",
+    "build": "echo 'Build complete'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/content_creation.git"
+  },
+  "keywords": ["youtube", "analysis", "ai", "gemini"],
+  "author": "",
+  "license": "MIT"
+}
